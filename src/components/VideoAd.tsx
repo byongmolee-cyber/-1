@@ -8,6 +8,7 @@ export const VideoAd: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [hasKey, setHasKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adType, setAdType] = useState<'phone' | 'bear'>('phone');
 
   useEffect(() => {
     checkApiKey().then(setHasKey);
@@ -16,25 +17,33 @@ export const VideoAd: React.FC = () => {
   const handleGenerateAd = async () => {
     if (!hasKey) {
       await openApiKeySelector();
+      // Mitigate race condition: assume success and proceed
       setHasKey(true);
-      return;
     }
 
     setLoading(true);
     setError(null);
+    setVideoUrl(null);
     try {
-      // Prompt for a phone ad featuring Nano Banana
-      const prompt = "A high-end cinematic commercial for a futuristic smartphone called 'Nano Banana Phone'. The phone is sleek, yellow-tinted, and features a glowing banana logo. It's being held by a stylish person in a neon-lit city. High quality, 4k, professional lighting.";
+      let prompt = "";
+      if (adType === 'phone') {
+        prompt = "A high-end cinematic commercial for a futuristic smartphone called 'Nano Banana Phone'. The phone is sleek, yellow-tinted, and features a glowing banana logo. It's being held by a stylish person in a neon-lit city. High quality, 4k, professional lighting.";
+      } else {
+        prompt = "A cinematic, high-quality commercial featuring a majestic grizzly bear sitting in a lush forest. The bear is gently holding a glowing, golden 'Nano Banana'. The lighting is magical with sunbeams filtering through the trees. 4k, professional cinematography, nature documentary style.";
+      }
+      
       const url = await generateVideo(prompt, "16:9");
       setVideoUrl(url);
     } catch (err: any) {
-      if (err.message?.includes("Requested entity was not found")) {
+      console.error("Video generation error:", err);
+      if (err.message?.includes("Requested entity was not found") || err.message?.includes("404")) {
         setHasKey(false);
-        setError("API Key session expired. Please select your key again.");
+        setError("API Key not found or invalid. Please select a key from a paid Google Cloud project.");
+      } else if (err.message?.includes("403") || err.message?.includes("permission")) {
+        setError("Permission denied. Please ensure your API key has access to Veo models.");
       } else {
-        setError("Failed to generate video. This can take a few minutes.");
+        setError("Failed to generate video. Please check your connection and try again.");
       }
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -43,8 +52,31 @@ export const VideoAd: React.FC = () => {
   return (
     <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
       <div className="p-8 text-center">
-        <h2 className="text-3xl font-bold text-white mb-2">Nano Banana Mobile</h2>
-        <p className="text-white/60 mb-6">Experience the future of mobile technology</p>
+        <h2 className="text-3xl font-bold text-white mb-2">Nano Banana Commercials</h2>
+        <p className="text-white/60 mb-6">Choose a theme and generate your AI commercial</p>
+
+        <div className="flex justify-center gap-4 mb-8">
+          <button
+            onClick={() => setAdType('phone')}
+            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
+              adType === 'phone' 
+                ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20' 
+                : 'bg-white/5 text-white/60 hover:bg-white/10'
+            }`}
+          >
+            Smartphone Ad
+          </button>
+          <button
+            onClick={() => setAdType('bear')}
+            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
+              adType === 'bear' 
+                ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20' 
+                : 'bg-white/5 text-white/60 hover:bg-white/10'
+            }`}
+          >
+            Bear & Banana Ad
+          </button>
+        </div>
 
         <div className="relative aspect-video bg-white/5 rounded-2xl flex items-center justify-center overflow-hidden group">
           <AnimatePresence mode="wait">

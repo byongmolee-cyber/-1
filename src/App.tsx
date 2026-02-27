@@ -34,6 +34,7 @@ export default function App() {
     const loadSamples = async () => {
       try {
         const samplePrompts = [
+          "A majestic grizzly bear sitting in a magical forest, gently holding a glowing golden Nano Banana, cinematic lighting, 4k.",
           "A vibrant 3D render of a banana wearing futuristic sunglasses and a leather jacket, neon background.",
           "A surreal oil painting of a giant banana floating over a futuristic city at sunset.",
           "A minimalist geometric art of a banana sliced into colorful cubes, high contrast."
